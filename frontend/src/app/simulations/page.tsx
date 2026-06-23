@@ -88,6 +88,12 @@ export default function SimulationsPage() {
 
   const [investments, setInvestments] = React.useState<Record<string, string>>({});
   const [years, setYears] = React.useState<number>(5);
+  const [baseDate, setBaseDate] = React.useState<Date>(() => new Date(2026, 5, 23));
+
+  React.useEffect(() => {
+    setBaseDate(new Date());
+  }, []);
+
   const [contributionType, setContributionType] = React.useState<"lump_sum" | "recurring">("lump_sum");
 
   // Planificador de Objetivos Financieros state
@@ -330,9 +336,19 @@ export default function SimulationsPage() {
 
     return percentiles.p50.map((val, idx) => {
       const yearFraction = (idx / (len - 1)) * years;
+      
+      // Calculate projected date for this step
+      const totalMonths = Math.round(yearFraction * 12);
+      const stepDate = new Date(baseDate);
+      stepDate.setMonth(baseDate.getMonth() + totalMonths);
+      
+      const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      const dateLabel = `${monthNames[stepDate.getMonth()]} ${stepDate.getFullYear()}`;
+
       return {
         step: idx,
         yearLabel: `Año ${yearFraction.toFixed(1)}`,
+        dateLabel,
         Mediana: Math.round(val),
         P25: Math.round(percentiles.p25[idx]),
         P75: Math.round(percentiles.p75[idx]),
@@ -340,7 +356,7 @@ export default function SimulationsPage() {
         P95: Math.round(percentiles.p95[idx]),
       };
     });
-  }, [simulation, years]);
+  }, [simulation, years, baseDate]);
 
   // Custom tooltips
   interface MCTooltipPayloadEntry {
@@ -348,6 +364,7 @@ export default function SimulationsPage() {
     name: string;
     color: string;
     dataKey?: string | number;
+    payload?: Record<string, unknown>;
   }
 
   interface MCTooltipProps {
@@ -361,10 +378,17 @@ export default function SimulationsPage() {
     
     // Sort payload by value descending so the tooltip order matches the visual top-to-bottom lines of the chart
     const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
+    
+    // Get the yearLabel from the original data object if available
+    const originalData = payload[0].payload as Record<string, unknown> | undefined;
+    const yearLabel = typeof originalData?.yearLabel === "string" ? originalData.yearLabel : undefined;
 
     return (
       <div className="rounded-lg border border-border/50 bg-popover/95 backdrop-blur-sm p-3 shadow-xl">
-        <p className="text-xs font-semibold text-muted-foreground mb-2">{label}</p>
+        <div className="flex items-center justify-between gap-4 mb-2">
+          <p className="text-xs font-bold text-foreground">{label}</p>
+          {yearLabel && <p className="text-[10px] font-semibold text-muted-foreground">{yearLabel}</p>}
+        </div>
         <div className="space-y-1.5">
           {sortedPayload.map((entry: MCTooltipPayloadEntry, index: number) => {
             // Map series keys to descriptive Spanish labels
@@ -954,7 +978,7 @@ export default function SimulationsPage() {
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.12)" vertical={false} />
                         <XAxis
-                          dataKey="yearLabel"
+                          dataKey="dateLabel"
                           stroke="rgba(255,255,255,0.6)"
                           fontSize={10}
                           tickLine={false}
