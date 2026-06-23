@@ -82,8 +82,10 @@ export default function SimulationsPage() {
   const [contributionType, setContributionType] = React.useState<"lump_sum" | "recurring">("lump_sum");
 
   // Planificador de Objetivos Financieros state
+  const [plannerMode, setPlannerMode] = React.useState<"target" | "contribution">("target");
   const [targetNetWorth, setTargetNetWorth] = React.useState<number>(50000);
   const [targetYears, setTargetYears] = React.useState<number>(5);
+  const [monthlyInput, setMonthlyInput] = React.useState<number>(300);
 
   // Rentabilidad esperada del perfil del inversor
   const profileExpectedReturn = React.useMemo(() => {
@@ -96,8 +98,12 @@ export default function SimulationsPage() {
     return rv + rf + alt + liq;
   }, [profile]);
 
-  // Aportación mensual requerida
-  const calculatedMonthlyContribution = React.useMemo(() => {
+  // Aportación mensual activa (calculada para Target o directa para Contribution)
+  const activeMonthlyContribution = React.useMemo(() => {
+    if (plannerMode === "contribution") {
+      return monthlyInput;
+    }
+    
     const v0 = portfolio?.total_value_eur ?? 0;
     const t = targetNetWorth;
     const y = targetYears;
@@ -110,7 +116,32 @@ export default function SimulationsPage() {
     const numerator = (t - fvCurrent) * rm;
     const denominator = Math.pow(1 + rm, n) - 1;
     return denominator > 0 ? numerator / denominator : 0;
-  }, [portfolio?.total_value_eur, targetNetWorth, targetYears, profileExpectedReturn]);
+  }, [plannerMode, monthlyInput, portfolio?.total_value_eur, targetNetWorth, targetYears, profileExpectedReturn]);
+
+  // Proyecciones para el método inverso
+  const contributionProjections = React.useMemo(() => {
+    const v0 = portfolio?.total_value_eur ?? 0;
+    const c = monthlyInput;
+    const y = targetYears;
+    const mu = profileExpectedReturn;
+    const rm = Math.pow(1 + mu, 1 / 12) - 1;
+    const n = 12 * y;
+    
+    const fvCurrent = v0 * Math.pow(1 + mu, y);
+    const fvContrib = rm > 0 ? c * (Math.pow(1 + rm, n) - 1) / rm : c * n;
+    const fvTotal = fvCurrent + fvContrib;
+    
+    const totalDeposited = c * n;
+    const totalInvested = v0 + totalDeposited;
+    const estimatedProfit = Math.max(0, fvTotal - totalInvested);
+    
+    return {
+      futureValue: fvTotal,
+      totalDeposited,
+      totalInvested,
+      estimatedProfit,
+    };
+  }, [portfolio?.total_value_eur, monthlyInput, targetYears, profileExpectedReturn]);
 
   // Distribución por activo (EUNL, ETH-EUR, AUX) renormalizada
   const targetDistribution = React.useMemo(() => {
@@ -120,7 +151,7 @@ export default function SimulationsPage() {
     const wAlt = alloc.alternativos || 0;
     const sumActive = wRV + wAlt;
     if (sumActive <= 0) return { EUNL: 0, "ETH-EUR": 0, AUX: 0 };
-    const c = calculatedMonthlyContribution;
+    const c = activeMonthlyContribution;
     const rvShare = wRV / sumActive;
     const altShare = wAlt / sumActive;
     return {
@@ -128,7 +159,7 @@ export default function SimulationsPage() {
       "ETH-EUR": Math.round(c * altShare * 0.5),
       AUX: Math.round(c * altShare * 0.5),
     };
-  }, [profile, calculatedMonthlyContribution]);
+  }, [profile, activeMonthlyContribution]);
 
   const handleLoadIntoSimulator = () => {
     setContributionType("recurring");
@@ -280,6 +311,7 @@ export default function SimulationsPage() {
     value: number;
     name: string;
     color: string;
+    dataKey?: string | number;
   }
 
   interface MCTooltipProps {
@@ -290,24 +322,46 @@ export default function SimulationsPage() {
 
   const CustomMCTooltip = ({ active, payload, label }: MCTooltipProps) => {
     if (!active || !payload || !payload.length) return null;
+    
+    // Sort payload by value descending so the tooltip order matches the visual top-to-bottom lines of the chart
+    const sortedPayload = [...payload].sort((a, b) => b.value - a.value);
+
     return (
       <div className="rounded-lg border border-border/50 bg-popover/95 backdrop-blur-sm p-3 shadow-xl">
         <p className="text-xs font-semibold text-muted-foreground mb-2">{label}</p>
         <div className="space-y-1.5">
-          {payload.map((entry: MCTooltipPayloadEntry, index: number) => (
-            <div key={index} className="flex items-center gap-4 justify-between">
-              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <span
-                  className="h-2 w-2 rounded-full shrink-0"
-                  style={{ backgroundColor: entry.color }}
-                />
-                {entry.name}
-              </span>
-              <span className="text-sm font-semibold font-mono text-foreground">
-                {formatCurrency(entry.value)}
-              </span>
-            </div>
-          ))}
+          {sortedPayload.map((entry: MCTooltipPayloadEntry, index: number) => {
+            // Map series keys to descriptive Spanish labels
+            let displayName = entry.name;
+            const dataKey = entry.dataKey;
+            
+            if (dataKey === "P95" || entry.name === "Rango Extremo (95% confianza)") {
+              displayName = "Rango Extremo Máximo (P95)";
+            } else if (dataKey === "P75" || entry.name === "Rango Esperado (IQR 50%)") {
+              displayName = "Rango Esperado Máximo (P75)";
+            } else if (dataKey === "Mediana" || entry.name === "Escenario Central (Mediana)") {
+              displayName = "Escenario Central (Mediana)";
+            } else if (dataKey === "P25") {
+              displayName = "Rango Esperado Mínimo (P25)";
+            } else if (dataKey === "P5") {
+              displayName = "Rango Extremo Mínimo (P5)";
+            }
+
+            return (
+              <div key={index} className="flex items-center gap-4 justify-between">
+                <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span
+                    className="h-2 w-2 rounded-full shrink-0"
+                    style={{ backgroundColor: entry.color }}
+                  />
+                  {displayName}
+                </span>
+                <span className="text-sm font-semibold font-mono text-foreground">
+                  {formatCurrency(entry.value)}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -381,27 +435,65 @@ export default function SimulationsPage() {
                 Planificador de Objetivos Financieros
               </CardTitle>
               <CardDescription>
-                Fija tu patrimonio objetivo y calcula cuánto necesitas invertir mensualmente para conseguirlo
+                Define tu meta a futuro o calcula la proyección en base a tus aportaciones mensuales
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
+              {/* Selector de modo de planificador */}
+              <div className="flex bg-background/50 border border-border/40 p-1 rounded-lg gap-1 w-full">
+                <Button
+                  onClick={() => setPlannerMode("target")}
+                  type="button"
+                  variant={plannerMode === "target" ? "secondary" : "ghost"}
+                  className="flex-1 text-xs font-semibold h-8"
+                >
+                  Definir Objetivo
+                </Button>
+                <Button
+                  onClick={() => setPlannerMode("contribution")}
+                  type="button"
+                  variant={plannerMode === "contribution" ? "secondary" : "ghost"}
+                  className="flex-1 text-xs font-semibold h-8"
+                >
+                  Definir Aportación
+                </Button>
+              </div>
+
               {/* Inputs Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label htmlFor="target-net-worth" className="text-xs font-semibold text-muted-foreground">
-                    Patrimonio Objetivo
-                  </label>
-                  <div className="relative">
-                    <Input
-                      id="target-net-worth"
-                      type="number"
-                      value={targetNetWorth}
-                      onChange={(e) => setTargetNetWorth(Math.max(0, parseFloat(e.target.value) || 0))}
-                      className="pl-7 pr-4 py-1.5 text-sm font-mono"
-                    />
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">€</span>
+                {plannerMode === "target" ? (
+                  <div className="space-y-2">
+                    <label htmlFor="target-net-worth" className="text-xs font-semibold text-muted-foreground">
+                      Patrimonio Objetivo
+                    </label>
+                    <div className="relative">
+                      <Input
+                        id="target-net-worth"
+                        type="number"
+                        value={targetNetWorth}
+                        onChange={(e) => setTargetNetWorth(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="pl-7 pr-4 py-1.5 text-sm font-mono"
+                      />
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">€</span>
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div className="space-y-2">
+                    <label htmlFor="monthly-input" className="text-xs font-semibold text-muted-foreground">
+                      Aportación Mensual
+                    </label>
+                    <div className="relative">
+                      <Input
+                        id="monthly-input"
+                        type="number"
+                        value={monthlyInput}
+                        onChange={(e) => setMonthlyInput(Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="pl-7 pr-4 py-1.5 text-sm font-mono"
+                      />
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted-foreground">€</span>
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
@@ -445,19 +537,52 @@ export default function SimulationsPage() {
                 </div>
               </div>
 
-              {/* Required Monthly savings results */}
+              {/* Required Monthly savings / Projections results */}
               <div className="space-y-4 pt-2">
-                <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-primary/5 border border-primary/20 text-center">
-                  <span className="text-xs font-medium text-muted-foreground">Aportación Mensual Requerida</span>
-                  <span className="text-3xl font-black text-primary font-mono mt-1">
-                    {formatCurrency(calculatedMonthlyContribution)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground mt-1">
-                    durante los próximos {targetYears} años
-                  </span>
-                </div>
+                {plannerMode === "target" ? (
+                  <>
+                    <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-primary/5 border border-primary/20 text-center">
+                      <span className="text-xs font-medium text-muted-foreground">Aportación Mensual Requerida</span>
+                      <span className="text-3xl font-black text-primary font-mono mt-1">
+                        {formatCurrency(activeMonthlyContribution)}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground mt-1">
+                        durante los próximos {targetYears} años
+                      </span>
+                    </div>
 
-                {calculatedMonthlyContribution > 0 ? (
+                    {activeMonthlyContribution === 0 && (
+                      <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center text-xs text-emerald-400">
+                        <Sparkles className="h-6 w-6 mx-auto mb-2 text-emerald-400" />
+                        <strong>¡Objetivo alcanzado!</strong> Tu patrimonio actual de {formatCurrency(portfolio?.total_value_eur ?? 0)} ya supera o iguala la meta de {formatCurrency(targetNetWorth)} en {targetYears} años sin necesidad de nuevas aportaciones.
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-primary/5 border border-primary/20 text-center">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase leading-tight">Patrimonio Estimado</span>
+                      <span className="text-base font-bold text-primary font-mono mt-1 truncate w-full">
+                        {formatCurrency(contributionProjections.futureValue)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-muted/40 border border-border/30 text-center">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase leading-tight">Total Aportado</span>
+                      <span className="text-base font-bold text-foreground font-mono mt-1 truncate w-full">
+                        {formatCurrency(contributionProjections.totalDeposited)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-center">
+                      <span className="text-[10px] font-medium text-emerald-400 uppercase leading-tight">Ganancia Estimada</span>
+                      <span className="text-base font-bold text-emerald-400 font-mono mt-1 truncate w-full">
+                        {formatCurrency(contributionProjections.estimatedProfit)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show distribution and load button if active contribution is above 0 */}
+                {activeMonthlyContribution > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       Distribución Sugerida en tus Activos de Revolut
@@ -518,11 +643,6 @@ export default function SimulationsPage() {
                       Cargar aportaciones en el simulador
                       <ArrowRight className="h-3.5 w-3.5 ml-auto" />
                     </Button>
-                  </div>
-                ) : (
-                  <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-center text-xs text-emerald-400">
-                    <Sparkles className="h-6 w-6 mx-auto mb-2 text-emerald-400" />
-                    <strong>¡Objetivo alcanzado!</strong> Tu patrimonio actual de {formatCurrency(portfolio?.total_value_eur ?? 0)} ya supera o iguala la meta de {formatCurrency(targetNetWorth)} en {targetYears} años sin necesidad de nuevas aportaciones.
                   </div>
                 )}
               </div>
@@ -839,6 +959,7 @@ export default function SimulationsPage() {
                           strokeWidth={1}
                           strokeDasharray="4 4"
                           fill="none"
+                          legendType="none"
                         />
 
                         {/* Central Range (P25 - P75) */}
@@ -856,6 +977,7 @@ export default function SimulationsPage() {
                           stroke="#3b82f6"
                           strokeWidth={2}
                           fill="none"
+                          legendType="none"
                         />
 
                         {/* Median Line */}
