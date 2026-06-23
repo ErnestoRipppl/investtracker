@@ -277,7 +277,7 @@ def simulate_portfolio(req: SimulationRequest, db: Session = Depends(get_db)) ->
         expected_return=weighted_return,
         volatility=portfolio_vol,
         years=req.years,
-        n_simulations=5000,
+        n_simulations=1000,
         initial_value=init_val,
         monthly_contribution=monthly_contrib
     )

@@ -600,27 +600,35 @@ class QuantEngine:
         dt = 1.0 / trading_days
 
         np.random.seed(None)
-        drift = (expected_return - 0.5 * volatility ** 2) * dt
-        diffusion = volatility * np.sqrt(dt)
+        drift = np.float32((expected_return - 0.5 * volatility ** 2) * dt)
+        diffusion = np.float32(volatility * np.sqrt(dt))
 
-        random_shocks = np.random.standard_normal((n_simulations, total_days))
+        # Generate standard normal as float32 (half memory)
+        random_shocks = np.random.standard_normal((n_simulations, total_days)).astype(np.float32)
         daily_returns = drift + diffusion * random_shocks
+        del random_shocks
 
         init_val = initial_value if initial_value is not None else current_value
 
         if monthly_contribution > 0.0:
             exp_returns = np.exp(daily_returns)
-            full_paths = np.zeros((n_simulations, total_days + 1))
+            del daily_returns
+            
+            full_paths = np.zeros((n_simulations, total_days + 1), dtype=np.float32)
             full_paths[:, 0] = init_val
             for t in range(1, total_days + 1):
                 full_paths[:, t] = full_paths[:, t - 1] * exp_returns[:, t - 1]
                 if t % 21 == 0:
                     full_paths[:, t] += monthly_contribution
+            del exp_returns
         else:
             log_paths = np.cumsum(daily_returns, axis=1)
+            del daily_returns
             paths = init_val * np.exp(log_paths)
-            initial = np.full((n_simulations, 1), init_val)
-            full_paths = np.hstack([initial, paths])
+            del log_paths
+            initial = np.full((n_simulations, 1), init_val, dtype=np.float32)
+            full_paths = np.hstack([initial, paths]).astype(np.float32)
+            del paths, initial
 
         # Downsample to ~500 points for visualization
         total_points = full_paths.shape[1]
