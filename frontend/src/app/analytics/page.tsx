@@ -6,7 +6,6 @@ import { apiFetch } from "@/lib/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { AlertCircle, Brain, Sigma, ArrowUpRight, ArrowDownRight, Coins, Wallet, Percent } from "lucide-react";
 import { formatCurrency, formatPercent, formatNumber } from "@/lib/utils";
-import { Recommendations } from "@/components/analytics/recommendations";
 
 interface HoldingPnL {
   ticker: string;
@@ -329,11 +328,6 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
         </div>
-      </div>
-
-      {/* Recommendations Section */}
-      <div className="pt-6 border-t border-border/10">
-        <Recommendations />
       </div>
     </div>
   );

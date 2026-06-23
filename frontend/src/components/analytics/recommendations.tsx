@@ -52,7 +52,7 @@ const FORMULA_LOOKUPS: Record<string, { name: string; latex: string }> = {
   risk_parity: { name: "Paridad de Riesgo", latex: "RC_i = \\frac{\\sigma_p^2}{N}" },
 };
 
-export function Recommendations() {
+export function Recommendations({ showChart = true }: { showChart?: boolean } = {}) {
   const [expandedId, setExpandedId] = React.useState<string | null>(null);
 
   // Queries
@@ -189,7 +189,7 @@ export function Recommendations() {
     <div className="space-y-6">
       
       {/* Allocation Comparison Chart */}
-      {profile && (
+      {showChart && profile && (
         <div>
           <Card className="border-border/50 bg-card/85 backdrop-blur-sm shadow-md">
             <CardHeader className="pb-3 border-b border-border/10">

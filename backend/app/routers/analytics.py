@@ -3,8 +3,10 @@ Analytics router — KPIs, quantitative metrics, risk, Monte Carlo, recommendati
 """
 
 from decimal import Decimal
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -136,3 +138,156 @@ def get_recommendations(db: Session = Depends(get_db)) -> list[dict]:
         }
         for r in recs
     ]
+
+
+class SimulatedAsset(BaseModel):
+    ticker: str
+    asset_type: str
+    value: float
+
+
+class SimulationRequest(BaseModel):
+    simulated_assets: List[SimulatedAsset]
+    years: int = 5
+
+
+ASSET_METRICS = {
+    "crypto": {"return": 0.18, "volatility": 0.45},
+    "stock": {"return": 0.09, "volatility": 0.18},
+    "etf": {"return": 0.075, "volatility": 0.14},
+    "fund": {"return": 0.06, "volatility": 0.11},
+    "bond": {"return": 0.04, "volatility": 0.055},
+}
+DEFAULT_METRICS = {"return": 0.03, "volatility": 0.01}
+
+
+@router.post("/simulate")
+def simulate_portfolio(req: SimulationRequest, db: Session = Depends(get_db)) -> dict:
+    """
+    Simulate portfolio performance by merging current positions with simulated ones,
+    calculating new metrics, and running Monte Carlo simulation.
+    """
+    # 1. Get current holdings
+    holdings = compute_holdings(db)
+    
+    # Enrich to get prices and current values
+    current_positions = {}
+    total_current_value = 0.0
+    
+    if holdings:
+        tickers = [h["ticker"] for h in holdings]
+        prices_data = get_bulk_prices(tickers)
+        market_prices = {}
+        for t, d in prices_data.items():
+            if d["price"] is not None:
+                market_prices[t] = d["price"]
+            else:
+                for h in holdings:
+                    if h["ticker"] == t:
+                        market_prices[t] = h["avg_price"]
+        
+        eur_usd = get_eur_usd_rate()
+        dashboard = compute_dashboard(holdings, market_prices, eur_usd)
+        
+        for h in dashboard["holdings"]:
+            ticker = h["ticker"]
+            val = float(h.get("position_value", 0.0))
+            asset_type = h.get("asset_type", "stock").lower()
+            current_positions[ticker] = {
+                "ticker": ticker,
+                "asset_type": asset_type,
+                "value": val
+            }
+            total_current_value += val
+
+    # 2. Merge with simulated assets
+    merged_positions = {}
+    for k, v in current_positions.items():
+        merged_positions[k] = v.copy()
+        
+    for sim in req.simulated_assets:
+        ticker = sim.ticker.strip().upper()
+        asset_type = sim.asset_type.lower()
+        val = sim.value
+        
+        if ticker in merged_positions:
+            merged_positions[ticker]["value"] += val
+        else:
+            merged_positions[ticker] = {
+                "ticker": ticker,
+                "asset_type": asset_type,
+                "value": val
+            }
+
+    # 3. Calculate metrics
+    total_projected_value = sum(pos["value"] for pos in merged_positions.values())
+    
+    if total_projected_value <= 0:
+        return {
+            "expected_return": 0.0,
+            "volatility": 0.0,
+            "sharpe_ratio": 0.0,
+            "current_value": total_current_value,
+            "projected_value": 0.0,
+            "projected_allocation": {
+                "renta_variable": 0.0,
+                "renta_fija": 0.0,
+                "alternativos": 0.0,
+                "liquidez": 0.0
+            },
+            "monte_carlo": {}
+        }
+
+    weighted_return = 0.0
+    sum_weighted_var = 0.0
+    
+    actual_rv = 0.0
+    actual_rf = 0.0
+    actual_alt = 0.0
+    actual_liq = 0.0
+
+    for pos in merged_positions.values():
+        val = pos["value"]
+        w = val / total_projected_value
+        atype = pos["asset_type"]
+        
+        metrics = ASSET_METRICS.get(atype, DEFAULT_METRICS)
+        weighted_return += w * metrics["return"]
+        sum_weighted_var += (w * metrics["volatility"]) ** 2
+        
+        if atype in ("stock", "etf", "fund"):
+            actual_rv += w * 100.0
+        elif atype == "bond":
+            actual_rf += w * 100.0
+        elif atype == "crypto":
+            actual_alt += w * 100.0
+        else:
+            actual_liq += w * 100.0
+
+    portfolio_vol = max(0.01, float(sum_weighted_var ** 0.5))
+    sharpe = (weighted_return - 0.03) / portfolio_vol
+
+    # 4. Run Monte Carlo
+    mc = QuantEngine.monte_carlo_simulation(
+        current_value=total_projected_value,
+        expected_return=weighted_return,
+        volatility=portfolio_vol,
+        years=req.years,
+        n_simulations=5000
+    )
+
+    return {
+        "expected_return": round(weighted_return, 4),
+        "volatility": round(portfolio_vol, 4),
+        "sharpe_ratio": round(sharpe, 4),
+        "current_value": round(total_current_value, 2),
+        "projected_value": round(total_projected_value, 2),
+        "projected_allocation": {
+            "renta_variable": round(actual_rv, 2),
+            "renta_fija": round(actual_rf, 2),
+            "alternativos": round(actual_alt, 2),
+            "liquidez": round(actual_liq, 2)
+        },
+        "monte_carlo": mc
+    }
+

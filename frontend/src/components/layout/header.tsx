@@ -11,6 +11,7 @@ const routeTitles: Record<string, string> = {
   "/transactions": "Transacciones",
   "/import": "Importar Excel",
   "/analytics": "Analítica Cuantitativa",
+  "/recommendations": "Recomendaciones de Inversión",
   "/profile": "Perfil Inversor",
   "/settings": "Configuración",
 };
