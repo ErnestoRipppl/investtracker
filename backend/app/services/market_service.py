@@ -50,6 +50,9 @@ def _fetch_price_yfinance(ticker: str) -> Decimal | None:
     elif ticker == "RENDER":
         actual_ticker = "RENDER-USD"
         is_usd = True
+    elif ticker == "AUX":
+        actual_ticker = "GC=F"
+        is_usd = True
 
     try:
         stock = yf.Ticker(actual_ticker)

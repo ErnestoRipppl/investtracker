@@ -57,7 +57,8 @@ class Asset(Base):
         crypto_symbols = {
             "BTC", "ETH", "SOL", "ADA", "DOT", "XRP", "DOGE", "LTC", "LINK", 
             "UNI", "AVAX", "RENDER", "USDT", "USDC", "BNB", "TRX", "SHIB", 
-            "MATIC", "TON", "XLM", "NEAR", "LDO", "ICP", "FIL", "HBAR", "VET"
+            "MATIC", "TON", "XLM", "NEAR", "LDO", "ICP", "FIL", "HBAR", "VET",
+            "AUX"
         }
         
         etf_symbols = {

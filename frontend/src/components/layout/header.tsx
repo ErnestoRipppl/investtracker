@@ -12,6 +12,7 @@ const routeTitles: Record<string, string> = {
   "/import": "Importar Excel",
   "/analytics": "Analítica Cuantitativa",
   "/recommendations": "Recomendaciones de Inversión",
+  "/simulations": "Simulaciones y Metas",
   "/profile": "Perfil Inversor",
   "/settings": "Configuración",
 };

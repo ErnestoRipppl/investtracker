@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
+  LineChart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -22,6 +23,7 @@ import { useState } from "react";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/recommendations", label: "Recomendaciones", icon: Sparkles },
+  { href: "/simulations", label: "Simulaciones", icon: LineChart },
   { href: "/transactions", label: "Transacciones", icon: ArrowLeftRight },
   { href: "/import", label: "Importar", icon: Upload },
   { href: "/analytics", label: "Analítica", icon: Brain },
