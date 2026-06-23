@@ -41,6 +41,9 @@ def _fetch_price_yfinance(ticker: str) -> Decimal | None:
     Returns:
         Current price as Decimal, or None if unavailable.
     """
+    if ticker == "REV-LIQ":
+        return Decimal("1.0000")
+
     actual_ticker = ticker
     is_usd = False
 
@@ -137,6 +140,11 @@ def get_bulk_prices(tickers: list[str]) -> dict[str, dict]:
         dict mapping ticker -> {'price': Decimal|None, 'stale': bool}.
     """
     results: dict[str, dict] = {}
+
+    # Filter out REV-LIQ and assign its price immediately
+    if "REV-LIQ" in tickers:
+        results["REV-LIQ"] = {"price": Decimal("1.0000"), "stale": False}
+        tickers = [t for t in tickers if t != "REV-LIQ"]
 
     # Map tickers to actual Yahoo symbols and track which ones are in USD
     mapped_tickers = []

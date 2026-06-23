@@ -35,9 +35,18 @@ interface OptionItem {
 }
 
 const INVESTMENT_OPTIONS: OptionItem[] = [
+  // Renta Variable
   { ticker: "EUNL", name: "iShares MSCI World EUR Acc", assetType: "etf", description: "Acciones globales, diversificación total en mercados desarrollados." },
-  { ticker: "ETH-EUR", name: "Ethereum (Cripto)", assetType: "crypto", description: "Segunda red blockchain, líder de contratos inteligentes y finanzas DeFi." },
+  { ticker: "VUAA", name: "Vanguard S&P 500 UCITS ETF", assetType: "etf", description: "Fórmula de bajo coste para seguir el rendimiento de las 500 mayores empresas de EE.UU." },
+  // Renta Fija
+  { ticker: "SEGA", name: "iShares Govt Bond 3-7yr EUR", assetType: "bond", description: "Bonos soberanos de gobiernos de la Eurozona a medio plazo." },
+  { ticker: "EUN3", name: "iShares Govt Bond 7-10yr EUR", assetType: "bond", description: "Bonos del gobierno de la Eurozona con vencimiento a largo plazo (7-10 años)." },
+  // Alternativos
   { ticker: "AUX", name: "Oro Spot (Físico)", assetType: "crypto", description: "Materia prima de protección tradicional contra inflación disponible en Revolut." },
+  { ticker: "BTC-EUR", name: "Bitcoin (Cripto)", assetType: "crypto", description: "La principal criptomoneda del mercado como reserva de valor digital." },
+  { ticker: "ETH-EUR", name: "Ethereum (Cripto)", assetType: "crypto", description: "Segunda red blockchain, líder de contratos inteligentes y finanzas DeFi." },
+  // Liquidez
+  { ticker: "REV-LIQ", name: "Cuenta Flexible (Liquidez)", assetType: "liquidez", description: "Fondo monetario de liquidez inmediata y bajo riesgo en Revolut." },
 ];
 
 interface SimulationResult {
@@ -143,32 +152,59 @@ export default function SimulationsPage() {
     };
   }, [portfolio?.total_value_eur, monthlyInput, targetYears, profileExpectedReturn]);
 
-  // Distribución por activo (EUNL, ETH-EUR, AUX) renormalizada
+  // Distribución por activo (EUNL, VUAA, SEGA, EUN3, AUX, BTC-EUR, ETH-EUR, REV-LIQ) renormalizada
   const targetDistribution = React.useMemo(() => {
-    if (!profile || !profile.recommended_allocation) return { EUNL: 0, "ETH-EUR": 0, AUX: 0 };
+    const result = {
+      EUNL: 0,
+      VUAA: 0,
+      SEGA: 0,
+      EUN3: 0,
+      AUX: 0,
+      "BTC-EUR": 0,
+      "ETH-EUR": 0,
+      "REV-LIQ": 0,
+    };
+    
+    if (!profile || !profile.recommended_allocation) return result;
     const alloc = profile.recommended_allocation;
     const wRV = alloc.renta_variable || 0;
+    const wRF = alloc.renta_fija || 0;
     const wAlt = alloc.alternativos || 0;
-    const sumActive = wRV + wAlt;
-    if (sumActive <= 0) return { EUNL: 0, "ETH-EUR": 0, AUX: 0 };
+    const wLiq = alloc.liquidez || 0;
+    
     const c = activeMonthlyContribution;
-    const rvShare = wRV / sumActive;
-    const altShare = wAlt / sumActive;
-    return {
-      EUNL: Math.round(c * rvShare),
-      "ETH-EUR": Math.round(c * altShare * 0.5),
-      AUX: Math.round(c * altShare * 0.5),
-    };
+    if (c <= 0) return result;
+    
+    // Distribute according to the profile allocations and active weights
+    // Renta Variable (EUNL 70%, VUAA 30%)
+    result.EUNL = Math.round(c * (wRV / 100) * 0.70);
+    result.VUAA = Math.round(c * (wRV / 100) * 0.30);
+    
+    // Renta Fija (SEGA 60%, EUN3 40%)
+    result.SEGA = Math.round(c * (wRF / 100) * 0.60);
+    result.EUN3 = Math.round(c * (wRF / 100) * 0.40);
+    
+    // Alternativos (AUX 50%, BTC-EUR 30%, ETH-EUR 20%)
+    result.AUX = Math.round(c * (wAlt / 100) * 0.50);
+    result["BTC-EUR"] = Math.round(c * (wAlt / 100) * 0.30);
+    result["ETH-EUR"] = Math.round(c * (wAlt / 100) * 0.20);
+    
+    // Liquidez (REV-LIQ 100%)
+    result["REV-LIQ"] = Math.round(c * (wLiq / 100) * 1.00);
+    
+    return result;
   }, [profile, activeMonthlyContribution]);
 
   const handleLoadIntoSimulator = () => {
     setContributionType("recurring");
     setYears(targetYears);
-    setInvestments({
-      EUNL: targetDistribution.EUNL > 0 ? targetDistribution.EUNL.toString() : "",
-      "ETH-EUR": targetDistribution["ETH-EUR"] > 0 ? targetDistribution["ETH-EUR"].toString() : "",
-      AUX: targetDistribution.AUX > 0 ? targetDistribution.AUX.toString() : "",
+    const newInvestments: Record<string, string> = {};
+    Object.entries(targetDistribution).forEach(([ticker, val]) => {
+      if (val > 0) {
+        newInvestments[ticker] = val.toString();
+      }
     });
+    setInvestments(newInvestments);
   };
 
   const handleInputChange = (ticker: string, value: string) => {
@@ -585,53 +621,42 @@ export default function SimulationsPage() {
                 {activeMonthlyContribution > 0 && (
                   <div className="space-y-3">
                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                      Distribución Sugerida en tus Activos de Revolut
+                      Distribución Sugerida por Perfil Inversor
                     </h4>
                     <div className="grid grid-cols-1 gap-2.5">
-                      {/* EUNL */}
-                      <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/30 bg-background/40">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-blue-500/10 text-blue-400 border-blue-500/20" variant="outline">
-                            EUNL
-                          </Badge>
-                          <span className="text-xs font-semibold text-foreground">iShares MSCI World</span>
-                        </div>
-                        <span className="text-sm font-bold font-mono text-foreground">
-                          {formatCurrency(targetDistribution.EUNL)}/mes
-                        </span>
-                      </div>
-
-                      {/* ETH-EUR */}
-                      <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/30 bg-background/40">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20" variant="outline">
-                            ETH-EUR
-                          </Badge>
-                          <span className="text-xs font-semibold text-foreground">Ethereum</span>
-                        </div>
-                        <span className="text-sm font-bold font-mono text-foreground">
-                          {formatCurrency(targetDistribution["ETH-EUR"])}/mes
-                        </span>
-                      </div>
-
-                      {/* AUX */}
-                      <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/30 bg-background/40">
-                        <div className="flex items-center gap-2">
-                          <Badge className="bg-amber-500/10 text-amber-400 border-amber-500/20" variant="outline">
-                            AUX
-                          </Badge>
-                          <span className="text-xs font-semibold text-foreground">Oro Spot (Gold)</span>
-                        </div>
-                        <span className="text-sm font-bold font-mono text-foreground">
-                          {formatCurrency(targetDistribution.AUX)}/mes
-                        </span>
-                      </div>
+                      {INVESTMENT_OPTIONS.map((opt) => {
+                        const val = targetDistribution[opt.ticker as keyof typeof targetDistribution] || 0;
+                        if (val <= 0) return null;
+                        
+                        const badgeColor =
+                          opt.assetType === "crypto"
+                            ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
+                            : opt.assetType === "bond"
+                            ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                            : opt.assetType === "liquidez"
+                            ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                            : "bg-blue-500/10 text-blue-400 border-blue-500/20";
+                            
+                        return (
+                          <div key={opt.ticker} className="flex items-center justify-between p-2.5 rounded-lg border border-border/30 bg-background/40">
+                            <div className="flex items-center gap-2">
+                              <Badge className={badgeColor} variant="outline">
+                                {opt.ticker}
+                              </Badge>
+                              <span className="text-xs font-semibold text-foreground">{opt.name}</span>
+                            </div>
+                            <span className="text-sm font-bold font-mono text-foreground">
+                              {formatCurrency(val)}/mes
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
 
                     <div className="flex items-start gap-2 p-2.5 rounded-lg bg-muted/40 text-[10px] text-muted-foreground leading-normal">
                       <Info className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
                       <span>
-                        Las proporciones se han adaptado para canalizar la inversión a través de los activos que ya tienes (<strong>EUNL</strong>, <strong>ETH-EUR</strong>) y oro (<strong>AUX</strong>), alineándose lo más posible a las ponderaciones de tu perfil de inversor.
+                        Las proporciones se calculan de manera inteligente diversificando entre los activos de tu perfil inversor: Renta Variable (EUNL, VUAA), Renta Fija (SEGA, EUN3), Alternativos (AUX, BTC-EUR, ETH-EUR) y Liquidez (REV-LIQ).
                       </span>
                     </div>
 
@@ -696,6 +721,8 @@ export default function SimulationsPage() {
                         ? "bg-purple-500/10 text-purple-400 border-purple-500/20"
                         : opt.assetType === "bond"
                         ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                        : opt.assetType === "liquidez"
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                         : "bg-blue-500/10 text-blue-400 border-blue-500/20";
                     return (
                       <div key={opt.ticker} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-2.5 rounded-lg border border-border/30 bg-background/40 hover:bg-background/60 transition-colors">
