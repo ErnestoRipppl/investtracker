@@ -98,14 +98,12 @@ export function usePortfolioHistory(limit: number = 30) {
     queryKey: ["portfolio", "history", limit],
     queryFn: async () => {
       const data = await apiFetch<ApiHistorySnapshot[]>(`/api/portfolio/history?limit=${limit}`);
-      // Reverse historical snapshots so they are displayed chronologically in the chart
-      return [...data]
-        .reverse()
-        .map((s: ApiHistorySnapshot) => ({
-          date: s.date,
-          value: s.total_value_eur ?? 0,
-          invested: s.total_invested ?? 0,
-        }));
+      // Map historical snapshots (already sorted chronologically by the backend)
+      return [...data].map((s: ApiHistorySnapshot) => ({
+        date: s.date,
+        value: s.total_value_eur ?? 0,
+        invested: s.total_invested ?? 0,
+      }));
     },
   });
 }
