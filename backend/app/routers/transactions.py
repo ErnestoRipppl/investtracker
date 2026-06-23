@@ -100,7 +100,7 @@ def create_transaction(
         asset = Asset(
             ticker=ticker_upper,
             name=ticker_upper,
-            asset_type="stock",
+            asset_type=Asset.determine_type(ticker_upper),
         )
         db.add(asset)
         db.flush()
@@ -146,7 +146,7 @@ def update_transaction(
         ticker_upper = update_data.pop("ticker").upper()
         asset = db.query(Asset).filter(Asset.ticker == ticker_upper).first()
         if asset is None:
-            asset = Asset(ticker=ticker_upper, name=ticker_upper, asset_type="stock")
+            asset = Asset(ticker=ticker_upper, name=ticker_upper, asset_type=Asset.determine_type(ticker_upper))
             db.add(asset)
             db.flush()
         txn.asset_id = asset.id

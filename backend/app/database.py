@@ -122,3 +122,22 @@ def init_db() -> None:
     finally:
         db.close()
 
+    # Auto-fix existing asset types (self-healing migration)
+    db = SessionLocal()
+    try:
+        assets = db.query(Asset).all()
+        updated = False
+        for asset in assets:
+            correct_type = Asset.determine_type(asset.ticker)
+            if asset.asset_type != correct_type:
+                asset.asset_type = correct_type
+                updated = True
+        if updated:
+            db.commit()
+    except Exception as e:
+        print(f"Error auto-fixing asset types: {e}")
+        db.rollback()
+    finally:
+        db.close()
+
+

@@ -325,7 +325,7 @@ def import_transactions(
                 asset = Asset(
                     ticker=ticker,
                     name=ticker,
-                    asset_type="stock",
+                    asset_type=Asset.determine_type(ticker),
                 )
                 db.add(asset)
                 db.flush()

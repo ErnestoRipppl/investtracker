@@ -45,5 +45,29 @@ class Asset(Base):
         "Transaction", back_populates="asset", cascade="all, delete-orphan"
     )
 
+    @classmethod
+    def determine_type(cls, ticker: str) -> str:
+        """
+        Determine the asset type ('crypto', 'etf', 'stock') based on the ticker.
+        """
+        t = ticker.strip().upper()
+        # Clean suffixes (e.g. BTC-EUR -> BTC, ETH.DE -> ETH)
+        base = t.split("-")[0].split(".")[0]
+        
+        crypto_symbols = {
+            "BTC", "ETH", "SOL", "ADA", "DOT", "XRP", "DOGE", "LTC", "LINK", 
+            "UNI", "AVAX", "RENDER", "USDT", "USDC", "BNB", "TRX", "SHIB", 
+            "MATIC", "TON", "XLM", "NEAR", "LDO", "ICP", "FIL", "HBAR", "VET"
+        }
+        
+        if base in crypto_symbols or any(c in t for c in ("BTC-", "ETH-", "SOL-", "RENDER-")):
+            return "crypto"
+            
+        if any(ext in t for ext in (".DE", ".AS", ".PA", ".MI", ".L")) or "ETF" in t:
+            return "etf"
+            
+        return "stock"
+
     def __repr__(self) -> str:
         return f"<Asset(id={self.id}, ticker='{self.ticker}', name='{self.name}')>"
+
