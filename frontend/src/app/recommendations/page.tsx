@@ -84,6 +84,7 @@ export default function RecommendationsPage() {
 
   const [investments, setInvestments] = React.useState<Record<string, string>>({});
   const [years, setYears] = React.useState<number>(5);
+  const [contributionType, setContributionType] = React.useState<"lump_sum" | "recurring">("lump_sum");
 
   const handleInputChange = (ticker: string, value: string) => {
     // Only allow positive numbers/decimals
@@ -119,19 +120,24 @@ export default function RecommendationsPage() {
       .filter(Boolean) as { ticker: string; asset_type: string; value: number }[];
   }, [investments]);
 
+  const monthlyContribution = React.useMemo(() => {
+    return simulatedAssets.reduce((sum, item) => sum + item.value, 0);
+  }, [simulatedAssets]);
+
   const {
     data: simulation,
     isLoading: isSimLoading,
     isFetching: isSimFetching,
     isError: isSimError
   } = useQuery<SimulationResult>({
-    queryKey: ["portfolio-simulation", simulatedAssets, years],
+    queryKey: ["portfolio-simulation", simulatedAssets, years, contributionType],
     queryFn: () =>
       apiFetch<SimulationResult>("/api/analytics/simulate", {
         method: "POST",
         body: JSON.stringify({
           simulated_assets: simulatedAssets,
           years,
+          contribution_type: contributionType
         }),
       }),
     staleTime: 10 * 1000,
@@ -336,6 +342,26 @@ export default function RecommendationsPage() {
               </div>
             </CardHeader>
             <CardContent className="p-6 space-y-6">
+              {/* Type of contribution selection */}
+              <div className="flex bg-background/50 border border-border/40 p-1 rounded-lg gap-1 w-full">
+                <Button
+                  onClick={() => setContributionType("lump_sum")}
+                  type="button"
+                  variant={contributionType === "lump_sum" ? "secondary" : "ghost"}
+                  className="flex-1 text-xs font-semibold h-8"
+                >
+                  Aportación Puntual (Hoy)
+                </Button>
+                <Button
+                  onClick={() => setContributionType("recurring")}
+                  type="button"
+                  variant={contributionType === "recurring" ? "secondary" : "ghost"}
+                  className="flex-1 text-xs font-semibold h-8"
+                >
+                  Aportación Recurrente (Mensual)
+                </Button>
+              </div>
+
               {/* Asset inputs */}
               <div className="space-y-4">
                 <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Opciones de Inversión</h4>
@@ -372,9 +398,12 @@ export default function RecommendationsPage() {
                               value={investments[opt.ticker] || ""}
                               onChange={(e) => handleInputChange(opt.ticker, e.target.value)}
                               placeholder="0"
-                              className="h-8 pl-6 pr-2 font-mono text-xs text-right"
+                              className="h-8 pl-6 pr-10 font-mono text-xs text-right"
                             />
                             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-muted-foreground">€</span>
+                            {contributionType === "recurring" && (
+                              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] font-bold text-muted-foreground">/mes</span>
+                            )}
                           </div>
                           <Button
                             onClick={() => handleAdjustValue(opt.ticker, 250)}
@@ -479,14 +508,22 @@ export default function RecommendationsPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <Card className="border-border/40 bg-card/60 backdrop-blur-sm">
                   <CardHeader className="p-3 pb-0">
-                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">Patrimonio Neto</span>
+                    <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+                      {contributionType === "recurring" ? "Patrimonio Actual" : "Patrimonio Neto"}
+                    </span>
                   </CardHeader>
                   <CardContent className="p-3 pt-1">
                     <p className="text-sm font-bold font-mono text-foreground">
-                      {formatCurrency(simulation.projected_value)}
+                      {formatCurrency(
+                        contributionType === "recurring"
+                          ? simulation.current_value
+                          : simulation.projected_value
+                      )}
                     </p>
                     <span className="text-[9px] text-muted-foreground">
-                      Simulado
+                      {contributionType === "recurring"
+                        ? `+ ${formatCurrency(monthlyContribution)}/mes`
+                        : "Simulado"}
                     </span>
                   </CardContent>
                 </Card>

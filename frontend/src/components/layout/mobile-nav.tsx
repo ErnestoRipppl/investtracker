@@ -15,10 +15,10 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/recommendations", label: "Recomendaciones", icon: Sparkles },
   { href: "/transactions", label: "Transacciones", icon: ArrowLeftRight },
   { href: "/import", label: "Importar", icon: Upload },
   { href: "/analytics", label: "Analítica", icon: Brain },
-  { href: "/recommendations", label: "Recomendaciones", icon: Sparkles },
   { href: "/profile", label: "Perfil", icon: UserCircle },
   { href: "/settings", label: "Config", icon: Settings },
 ];

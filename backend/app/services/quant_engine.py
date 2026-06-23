@@ -8,6 +8,7 @@ All methods return QuantResult with FormulaInfo metadata and Spanish interpretat
 
 import numpy as np
 from scipy.stats import norm
+from typing import Optional
 
 from app.utils.formula_registry import FormulaInfo, QuantResult, FORMULA_REGISTRY
 
@@ -574,6 +575,8 @@ class QuantEngine:
         volatility: float,
         years: int,
         n_simulations: int = 10000,
+        initial_value: Optional[float] = None,
+        monthly_contribution: float = 0.0,
     ) -> dict:
         """
         Run Monte Carlo simulation using geometric Brownian motion.
@@ -586,6 +589,8 @@ class QuantEngine:
             volatility: Annual volatility (e.g., 0.20 for 20%).
             years: Number of years to simulate.
             n_simulations: Number of simulation paths (default 10000).
+            initial_value: Optional override for starting value.
+            monthly_contribution: Value added to portfolio every month (21 days).
 
         Returns:
             dict with paths, percentiles, summary, years, n_simulations.
@@ -601,12 +606,21 @@ class QuantEngine:
         random_shocks = np.random.standard_normal((n_simulations, total_days))
         daily_returns = drift + diffusion * random_shocks
 
-        log_paths = np.cumsum(daily_returns, axis=1)
-        paths = current_value * np.exp(log_paths)
+        init_val = initial_value if initial_value is not None else current_value
 
-        # Prepend current value
-        initial = np.full((n_simulations, 1), current_value)
-        full_paths = np.hstack([initial, paths])
+        if monthly_contribution > 0.0:
+            exp_returns = np.exp(daily_returns)
+            full_paths = np.zeros((n_simulations, total_days + 1))
+            full_paths[:, 0] = init_val
+            for t in range(1, total_days + 1):
+                full_paths[:, t] = full_paths[:, t - 1] * exp_returns[:, t - 1]
+                if t % 21 == 0:
+                    full_paths[:, t] += monthly_contribution
+        else:
+            log_paths = np.cumsum(daily_returns, axis=1)
+            paths = init_val * np.exp(log_paths)
+            initial = np.full((n_simulations, 1), init_val)
+            full_paths = np.hstack([initial, paths])
 
         # Downsample to ~500 points for visualization
         total_points = full_paths.shape[1]

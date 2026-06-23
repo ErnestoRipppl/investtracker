@@ -8,8 +8,6 @@ import { AllocationPie } from "@/components/dashboard/allocation-pie";
 import { HoldingsTable } from "@/components/dashboard/holdings-table";
 import { usePortfolio, usePortfolioHistory } from "@/hooks/use-portfolio";
 
-import { Recommendations } from "@/components/analytics/recommendations";
-
 export default function DashboardPage() {
   const reducedMotion = useAppReducedMotion();
   
@@ -62,11 +60,6 @@ export default function DashboardPage() {
       {/* Holdings Table */}
       <m.div {...itemProps}>
         <HoldingsTable />
-      </m.div>
-
-      {/* Recommendations */}
-      <m.div {...itemProps}>
-        <Recommendations />
       </m.div>
     </m.div>
   );

@@ -149,6 +149,7 @@ class SimulatedAsset(BaseModel):
 class SimulationRequest(BaseModel):
     simulated_assets: List[SimulatedAsset]
     years: int = 5
+    contribution_type: str = "lump_sum"
 
 
 ASSET_METRICS = {
@@ -268,12 +269,17 @@ def simulate_portfolio(req: SimulationRequest, db: Session = Depends(get_db)) ->
     sharpe = (weighted_return - 0.03) / portfolio_vol
 
     # 4. Run Monte Carlo
+    init_val = total_current_value if req.contribution_type == "recurring" else total_projected_value
+    monthly_contrib = sum(sim.value for sim in req.simulated_assets) if req.contribution_type == "recurring" else 0.0
+
     mc = QuantEngine.monte_carlo_simulation(
         current_value=total_projected_value,
         expected_return=weighted_return,
         volatility=portfolio_vol,
         years=req.years,
-        n_simulations=5000
+        n_simulations=5000,
+        initial_value=init_val,
+        monthly_contribution=monthly_contrib
     )
 
     return {
