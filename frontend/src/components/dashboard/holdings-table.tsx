@@ -47,6 +47,16 @@ export function HoldingsTable() {
 
   const { holdings } = data;
 
+  const formatAssetType = (type: string) => {
+    const t = type.toLowerCase();
+    if (t === "stock" || t === "accion") return "Acción";
+    if (t === "crypto" || t === "cripto") return "Cripto";
+    if (t === "etf") return "ETF";
+    if (t === "bond" || t === "bono") return "Bono";
+    if (t === "fund" || t === "fondo") return "Fondo";
+    return type;
+  };
+
   if (holdings.length === 0) {
     return (
       <Card className="border-border/50 bg-card/80 backdrop-blur-sm">
@@ -103,7 +113,7 @@ export function HoldingsTable() {
                     </TableCell>
                     <TableCell>
                       <Badge variant="secondary" className="capitalize text-[10px] font-medium px-2 py-0.5">
-                        {h.asset_type.toLowerCase() === "stock" ? "Acción" : h.asset_type}
+                        {formatAssetType(h.asset_type)}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">{h.quantity.toLocaleString("es-ES")}</TableCell>
@@ -147,7 +157,7 @@ export function HoldingsTable() {
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-sm text-foreground">{h.ticker}</span>
                     <Badge variant="secondary" className="capitalize text-[9px] px-1.5 py-0">
-                      {h.asset_type.toLowerCase() === "stock" ? "Acción" : h.asset_type}
+                      {formatAssetType(h.asset_type)}
                     </Badge>
                   </div>
                   <span className={cn("text-xs font-bold font-mono flex items-center gap-0.5", pnlColor)}>
