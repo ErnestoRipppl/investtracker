@@ -60,10 +60,14 @@ class Asset(Base):
             "MATIC", "TON", "XLM", "NEAR", "LDO", "ICP", "FIL", "HBAR", "VET"
         }
         
+        etf_symbols = {
+            "EUNL", "VUAA", "SXR8", "SXRV", "VGEA", "SEGA", "EUN3", "SGLN", "IWDA", "CSPX", "VWCE", "VUSA", "IUSE"
+        }
+        
         if base in crypto_symbols or any(c in t for c in ("BTC-", "ETH-", "SOL-", "RENDER-")):
             return "crypto"
             
-        if any(ext in t for ext in (".DE", ".AS", ".PA", ".MI", ".L")) or "ETF" in t:
+        if base in etf_symbols or any(ext in t for ext in (".DE", ".AS", ".PA", ".MI", ".L")) or "ETF" in t:
             return "etf"
             
         return "stock"

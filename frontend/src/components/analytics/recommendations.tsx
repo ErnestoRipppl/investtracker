@@ -217,6 +217,7 @@ export function Recommendations() {
                       tickFormatter={(val) => `${val}%`}
                     />
                     <Tooltip
+                      cursor={false}
                       contentStyle={{
                         backgroundColor: "rgba(9, 9, 11, 0.95)",
                         border: "1px solid rgba(255,255,255,0.1)",

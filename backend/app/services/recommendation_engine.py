@@ -266,7 +266,7 @@ def generate_recommendations(
                     f"Revolut aplica una comisión de cambio de divisa (FX markup) del 0.5% en días laborables y del 1.0% "
                     f"en fines de semana en cuentas estándar. Esto encarece cada operación de compra o venta."
                 ),
-                action_suggested="Para evitar estos costes, prioriza la inversión en activos y ETFs denominados en EUR (por ejemplo, cotizados en bolsas europeas) o asegúrate de realizar tus operaciones estrictamente en días laborables.",
+                action_suggested="Para evitar estos costes, prioriza la inversión en activos y ETFs denominados en EUR. En Revolut, busca directamente las etiquetas (tickers) **EUNL** (iShares MSCI World en EUR), **VUAA** (Vanguard S&P 500 en EUR) o **SXR8** (iShares S&P 500 en EUR) en lugar de sus versiones en USD, y realiza tus operaciones estrictamente en días laborables.",
                 impact_estimate="Ahorro directo de entre 0.5% y 1.0% en comisiones por transacción.",
                 confidence="high",
                 profile_alignment="Alineado con una gestión eficiente de los costes de transacción."
@@ -302,7 +302,7 @@ def generate_recommendations(
                         f"activos de bajo riesgo (renta fija o liquidez). Las Cuentas Flexibles de Revolut invierten en "
                         f"Fondos Monetarios (MMF) y ofrecen un rendimiento diario muy competitivo en EUR sin riesgo de mercado."
                     ),
-                    action_suggested="Utiliza las Cuentas Flexibles de Revolut para colocar el porcentaje recomendado para renta fija y liquidez de tu perfil, obteniendo rendimiento con alta disponibilidad.",
+                    action_suggested="Abre la app de Revolut y ve a la sección Cuentas -> botón '+' -> 'Cuenta Flexible' (o 'Ahorros'). Esta cuenta invierte en Fondos Monetarios (MMF) en EUR y cubre tu asignación de liquidez de bajo riesgo con rentabilidad diaria.",
                     impact_estimate="Rendimiento estable y de bajo riesgo en línea con los objetivos de tu perfil.",
                     confidence="high",
                     profile_alignment=f"Ideal para cumplir la asignación de bajo riesgo exigida por tu perfil '{profile_type}'."
@@ -324,6 +324,114 @@ def generate_recommendations(
             confidence="high",
             profile_alignment="Optimización del coste de transacción según la frecuencia operativa."
         ))
+
+    # --- Portfolio Rebalancing & Specific Asset Tickers for Revolut ---
+    if profile_dict and holdings:
+        rec = profile_dict.get("recommended_allocation") or {}
+        rec_rv = float(rec.get("renta_variable", 0))
+        rec_rf = float(rec.get("renta_fija", 0))
+        rec_alt = float(rec.get("alternativos", 0))
+        rec_liq = float(rec.get("liquidez", 0))
+
+        actual_rv = 0.0
+        actual_rf = 0.0
+        actual_alt = 0.0
+        actual_liq = 0.0
+
+        for h in holdings:
+            h_type = (h.get("asset_type") or "stock").lower()
+            h_weight = float(h.get("weight", 0)) * 100.0
+            if h_type in ("stock", "etf", "fund"):
+                actual_rv += h_weight
+            elif h_type == "bond":
+                actual_rf += h_weight
+            elif h_type == "crypto":
+                actual_alt += h_weight
+            else:
+                actual_liq += h_weight
+
+        underweight = []
+        overweight = []
+        is_revolut = broker_model and "revolut" in broker_model.name.lower()
+
+        # Renta Variable deviation
+        diff_rv = actual_rv - rec_rv
+        if abs(diff_rv) > 5.0:
+            if diff_rv < 0:
+                underweight.append(("Renta Variable", abs(diff_rv), ["EUNL", "VUAA", "SXR8"]))
+            else:
+                overweight.append(("Renta Variable", diff_rv))
+
+        # Renta Fija deviation
+        diff_rf = actual_rf - rec_rf
+        if abs(diff_rf) > 5.0:
+            if diff_rf < 0:
+                underweight.append(("Renta Fija (Bonos)", abs(diff_rf), ["SEGA", "EUN3"]))
+            else:
+                overweight.append(("Renta Fija (Bonos)", diff_rf))
+
+        # Alternativos deviation
+        diff_alt = actual_alt - rec_alt
+        if abs(diff_alt) > 5.0:
+            if diff_alt < 0:
+                underweight.append(("Alternativos (Cripto/Oro)", abs(diff_alt), ["BTC", "ETH", "SGLN"]))
+            else:
+                overweight.append(("Alternativos (Cripto/Oro)", diff_alt))
+
+        # Liquidez deviation
+        diff_liq = actual_liq - rec_liq
+        if abs(diff_liq) > 5.0:
+            if diff_liq < 0:
+                underweight.append(("Liquidez (Efectivo)", abs(diff_liq), ["Cuentas Flexibles"]))
+            else:
+                overweight.append(("Liquidez (Efectivo)", diff_liq))
+
+        if underweight or overweight:
+            detailed_parts = [
+                "Hemos detectado desviaciones significativas entre tu asignación de activos actual y la recomendada para tu perfil:",
+                f"- **Renta Variable**: Actual {actual_rv:.1f}% vs Recomendado {rec_rv:.1f}% (Diferencia: {diff_rv:+.1f}%)",
+                f"- **Renta Fija**: Actual {actual_rf:.1f}% vs Recomendado {rec_rf:.1f}% (Diferencia: {diff_rf:+.1f}%)",
+                f"- **Alternativos**: Actual {actual_alt:.1f}% vs Recomendado {rec_alt:.1f}% (Diferencia: {diff_alt:+.1f}%)",
+                f"- **Liquidez**: Actual {actual_liq:.1f}% vs Recomendado {rec_liq:.1f}% (Diferencia: {diff_liq:+.1f}%)",
+                "\nPara equilibrar tu cartera, te sugerimos realizar las siguientes acciones en tu broker:"
+            ]
+
+            actions = []
+            if underweight:
+                actions.append("#### Compra o aporta a estas categorías (infraponderadas):")
+                for name, pct, tickers in underweight:
+                    if name == "Liquidez (Efectivo)":
+                        if is_revolut:
+                            actions.append(f"- **{name}** (añadir {pct:.1f}%): Abre o aporta a las **Cuentas Flexibles** de Revolut (que invierten en Fondos Monetarios). Búscalo como **Cuenta Flexible** en la sección de cuentas.")
+                        else:
+                            actions.append(f"- **{name}** (añadir {pct:.1f}%): Aumenta el saldo en efectivo de tu cartera.")
+                    else:
+                        tickers_fmt = " o ".join(f"**{t}**" for t in tickers)
+                        if is_revolut:
+                            actions.append(f"- **{name}** (añadir {pct:.1f}%): Compra activos cotizados en EUR para evitar la comisión por cambio de divisa. En la app de Revolut, busca directamente las etiquetas (tickers): {tickers_fmt}.")
+                        else:
+                            actions.append(f"- **{name}** (añadir {pct:.1f}%): Invierte capital en activos con tickers como {tickers_fmt}.")
+
+            if overweight:
+                actions.append("#### Pausa compras o reduce estas categorías (sobreponderados):")
+                for name, pct in overweight:
+                    actions.append(f"- **{name}** (exceso de {pct:.1f}%): Pausa las nuevas aportaciones a esta categoría o considera vender una fracción de estas posiciones para reequilibrar la cartera.")
+
+            detailed_analysis = "\n\n".join(detailed_parts) + "\n\n" + "\n".join(actions)
+            action_suggested = "Reequilibra tu cartera aportando capital a las clases infraponderadas."
+            if is_revolut:
+                action_suggested = "Busca los tickers recomendados en la app de Revolut y realiza las aportaciones necesarias en EUR."
+
+            recommendations.append(Recommendation(
+                priority=2,
+                category="rebalanceo",
+                title="Ajuste y Rebalanceo de Cartera",
+                summary="Tu asignación de activos actual se desvía de la recomendada para tu perfil inversor.",
+                detailed_analysis=detailed_analysis,
+                action_suggested=action_suggested,
+                confidence="high",
+                profile_alignment="Alinea la cartera al nivel de riesgo óptimo para tu perfil."
+            ))
 
     # Sort by priority (ascending = higher priority first)
     recommendations.sort(key=lambda r: r.priority)
