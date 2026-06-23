@@ -250,6 +250,81 @@ def generate_recommendations(
                         confidence="medium",
                     ))
 
+    # --- Revolut Specific Recommendations ---
+    if broker_model and "revolut" in broker_model.name.lower() and holdings:
+        # 1. FX Spread Warning (if holding any USD assets)
+        has_usd_assets = any(h.get("currency") == "USD" or "-usd" in h.get("ticker", "").lower() for h in holdings)
+        if has_usd_assets:
+            usd_tickers = [h.get("ticker") for h in holdings if h.get("currency") == "USD" or "-usd" in h.get("ticker", "").lower()]
+            recommendations.append(Recommendation(
+                priority=2,
+                category="costes_revolut",
+                title="Optimización de tipo de cambio (FX) en Revolut",
+                summary="Tu cartera contiene activos en USD, lo que incurre en costes de divisa del 0.5% - 1.0% en Revolut.",
+                detailed_analysis=(
+                    f"Identificamos activos denominados en USD ({', '.join(usd_tickers[:3])}) en tu cartera. "
+                    f"Revolut aplica una comisión de cambio de divisa (FX markup) del 0.5% en días laborables y del 1.0% "
+                    f"en fines de semana en cuentas estándar. Esto encarece cada operación de compra o venta."
+                ),
+                action_suggested="Para evitar estos costes, prioriza la inversión en activos y ETFs denominados en EUR (por ejemplo, cotizados en bolsas europeas) o asegúrate de realizar tus operaciones estrictamente en días laborables.",
+                impact_estimate="Ahorro directo de entre 0.5% y 1.0% en comisiones por transacción.",
+                confidence="high",
+                profile_alignment="Alineado con una gestión eficiente de los costes de transacción."
+            ))
+
+        # 2. Custody Fee warning
+        recommendations.append(Recommendation(
+            priority=3,
+            category="costes_revolut",
+            title="Comisión de custodia mensual de Revolut",
+            summary="Revolut aplica una comisión de custodia anual del 0.12%, cobrada mensualmente.",
+            detailed_analysis=(
+                f"Revolut cobra una comisión de custodia anual de 0.12% sobre el valor total de tu cartera de acciones/ETFs. "
+                f"Esta comisión se descuenta mensualmente (aprox. 0.01% del valor total al mes) directamente de tu cuenta de inversión."
+            ),
+            action_suggested="Mantén siempre un pequeño saldo de efectivo o saldo en tu cuenta flexible en tu cartera para evitar que Revolut liquide posiciones de forma automática por falta de fondos. Si tu patrimonio invertido supera los 15.000€, considera brokers sin custodia (como MyInvestor o Trade Republic) para evitar que este coste erosione tu rentabilidad.",
+            impact_estimate="Protección contra liquidaciones forzosas de activos por falta de saldo.",
+            confidence="high",
+            profile_alignment="Alineado con el control de costes recurrentes a largo plazo."
+        ))
+
+        # 3. Flexible Accounts for Conservative/Moderate/Balanced profiles
+        if profile_dict:
+            profile_type = profile_dict.get("profile_type", "balanced")
+            if profile_type in ("conservative", "moderate", "balanced"):
+                recommendations.append(Recommendation(
+                    priority=2,
+                    category="perfil_revolut",
+                    title="Uso de Cuentas Flexibles de Revolut para tu perfil",
+                    summary=f"Tu perfil ({profile_type.capitalize()}) requiere activos de bajo riesgo. Considera las Cuentas Flexibles de Revolut.",
+                    detailed_analysis=(
+                        f"Tu perfil de inversión es '{profile_type}', por lo que se recomienda una asignación importante a "
+                        f"activos de bajo riesgo (renta fija o liquidez). Las Cuentas Flexibles de Revolut invierten en "
+                        f"Fondos Monetarios (MMF) y ofrecen un rendimiento diario muy competitivo en EUR sin riesgo de mercado."
+                    ),
+                    action_suggested="Utiliza las Cuentas Flexibles de Revolut para colocar el porcentaje recomendado para renta fija y liquidez de tu perfil, obteniendo rendimiento con alta disponibilidad.",
+                    impact_estimate="Rendimiento estable y de bajo riesgo en línea con los objetivos de tu perfil.",
+                    confidence="high",
+                    profile_alignment=f"Ideal para cumplir la asignación de bajo riesgo exigida por tu perfil '{profile_type}'."
+                ))
+
+        # 4. Trade Frequency/Commissions warning
+        recommendations.append(Recommendation(
+            priority=3,
+            category="costes_revolut",
+            title="Agrupa tus operaciones en Revolut",
+            summary="Evita comisiones por exceso de transacciones mensuales agrupando tus aportaciones.",
+            detailed_analysis=(
+                f"El plan gratuito (Estándar) de Revolut suele limitar a 1 operación gratuita al mes, cobrando a partir de "
+                f"ahí un 0.25% (mínimo 1.00€) por trade. Realizar múltiples compras de poco importe en el mismo mes "
+                f"incurre en comisiones muy elevadas en proporción al capital invertido."
+            ),
+            action_suggested="Planifica tus compras y realiza una única inversión mensual mayor en lugar de múltiples compras pequeñas semanales para maximizar tus transacciones gratuitas.",
+            impact_estimate="Ahorro de comisiones fijas (de 1€ o más por operación extra).",
+            confidence="high",
+            profile_alignment="Optimización del coste de transacción según la frecuencia operativa."
+        ))
+
     # Sort by priority (ascending = higher priority first)
     recommendations.sort(key=lambda r: r.priority)
     return recommendations
