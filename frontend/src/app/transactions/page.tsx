@@ -49,7 +49,7 @@ export default function TransactionsPage() {
       <m.div {...itemProps}>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Transacciones</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Transferencias</h2>
             <p className="text-sm text-muted-foreground mt-1">
               Historial completo de compras, ventas y dividendos de tu cartera
             </p>

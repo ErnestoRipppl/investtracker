@@ -8,13 +8,13 @@ import { useEffect, useState } from "react";
 
 const routeTitles: Record<string, string> = {
   "/": "Dashboard",
-  "/transactions": "Transacciones",
+  "/transactions": "Transferencias",
   "/import": "Importar Excel",
   "/analytics": "Analítica Cuantitativa",
   "/recommendations": "Recomendaciones de Inversión",
   "/simulations": "Simulaciones y Metas",
   "/profile": "Perfil Inversor",
-  "/settings": "Configuración",
+  "/settings": "Ajustes",
 };
 
 export function Header() {
