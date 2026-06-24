@@ -17,8 +17,7 @@ from app.services.quant_engine import QuantEngine
 from app.services.recommendation_engine import generate_recommendations
 from app.services.portfolio_engine import compute_holdings, compute_dashboard
 from app.services.market_service import get_bulk_prices, get_eur_usd_rate
-
-from app.services.analytics_service import get_portfolio_analytics
+from app.services import advanced_analytics
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
 
@@ -49,6 +48,56 @@ def get_quant(db: Session = Depends(get_db)) -> dict:
     Get quantitative portfolio metrics (P&L realized/unrealized, commissions, weights, etc.).
     """
     return get_portfolio_analytics(db)
+
+
+@router.get("/rebalance")
+def get_rebalance(db: Session = Depends(get_db)) -> dict:
+    """
+    Get rebalancing suggestions based on target allocations.
+    """
+    data = advanced_analytics.get_rebalancing(db)
+    return _serialize(data)
+
+
+@router.get("/backtest")
+def get_backtest(years: int = Query(5, ge=1, le=10), db: Session = Depends(get_db)) -> dict:
+    """
+    Get historical backtest data of portfolio vs profile vs benchmark.
+    """
+    data = advanced_analytics.get_historical_backtest(db, years)
+    return _serialize(data)
+
+
+@router.get("/correlation")
+def get_correlation(db: Session = Depends(get_db)) -> dict:
+    """
+    Get asset correlation matrix.
+    """
+    data = advanced_analytics.get_correlation_matrix(db)
+    return _serialize(data)
+
+
+@router.get("/optimize")
+def get_optimize(db: Session = Depends(get_db)) -> dict:
+    """
+    Get portfolio optimization and frontier data.
+    """
+    data = advanced_analytics.get_portfolio_optimization(db)
+    return _serialize(data)
+
+
+@router.get("/tax-simulator")
+def get_tax_simulator(
+    ticker: str,
+    quantity: float = Query(..., gt=0),
+    price: float = Query(..., gt=0),
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Run tax FIFO simulation for selling a quantity at a target price.
+    """
+    data = advanced_analytics.simulate_fifo_tax(db, ticker, quantity, price)
+    return _serialize(data)
 
 
 @router.get("/risk")
