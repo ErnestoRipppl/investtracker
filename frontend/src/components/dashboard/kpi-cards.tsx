@@ -133,48 +133,80 @@ export function KPICards() {
     >
       {kpis.map((kpi, index) => {
         const Icon = kpi.icon;
+        
+        // Luxury styling states based on KPI type and performance
+        const isGold = kpi.title === "Total Invertido";
+        const themeColor = isGold 
+          ? "text-amber-400 bg-amber-500/10 group-hover:bg-amber-500/20" 
+          : (kpi.positive 
+              ? "text-emerald-400 bg-emerald-500/10 group-hover:bg-emerald-500/20" 
+              : "text-red-400 bg-red-500/10 group-hover:bg-red-500/20");
+
+        const hoverGlowClass = isGold
+          ? "glow-gold-hover"
+          : (kpi.positive
+              ? "glow-premium-hover"
+              : "hover:border-red-500/20 hover:shadow-[0_15px_40px_-10px_rgba(0,0,0,0.7),0_0_30px_rgba(239,68,68,0.08)] hover:-translate-y-0.5");
+
         return (
           <m.div key={index} {...itemProps}>
-            <Card className="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm hover:border-primary/30 transition-colors duration-300 group">
+            <Card className={cn(
+              "relative overflow-hidden glass-whale-card duration-300 group",
+              hoverGlowClass
+            )}>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
                   {kpi.title}
                 </CardTitle>
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
-                  <Icon className="h-4 w-4 text-primary" />
+                <div className={cn(
+                  "h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-300 border border-transparent",
+                  isGold ? "group-hover:border-amber-500/35" : (kpi.positive ? "group-hover:border-emerald-500/35" : "group-hover:border-red-500/35"),
+                  themeColor
+                )}>
+                  <Icon className="h-4 w-4" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold tracking-tight">
+                <div className={cn(
+                  "text-2xl font-black tracking-tight",
+                  isGold ? "bg-gradient-to-r from-amber-100 to-amber-300 bg-clip-text text-transparent" : "text-foreground"
+                )}>
                   <AnimatedNumber value={kpi.value} formatter={kpi.formatter} />
                 </div>
-                <div className="flex items-center gap-1 mt-1">
+                <div className="flex items-center gap-1.5 mt-1.5">
                   {kpi.title !== "Total Invertido" ? (
                     <p
                       className={cn(
-                        "text-xs font-semibold flex items-center gap-0.5",
-                        kpi.positive ? "text-emerald-500" : "text-red-500"
+                        "text-[10px] font-bold tracking-wide flex items-center gap-0.5 px-1.5 py-0.5 rounded",
+                        kpi.positive 
+                          ? "text-emerald-400 bg-emerald-500/5 border border-emerald-500/10" 
+                          : "text-red-400 bg-red-500/5 border border-red-500/10"
                       )}
                     >
                       {kpi.positive ? (
-                        <TrendingUp className="h-3 w-3" />
+                        <TrendingUp className="h-2.5 w-2.5" />
                       ) : (
-                        <TrendingDown className="h-3 w-3" />
+                        <TrendingDown className="h-2.5 w-2.5" />
                       )}
                       {kpi.change}
                     </p>
                   ) : (
-                    <p className="text-xs text-muted-foreground font-medium">
+                    <p className="text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded text-amber-400 bg-amber-500/5 border border-amber-500/10">
                       {kpi.change}
                     </p>
                   )}
-                  <span className="text-[10px] text-muted-foreground/60 font-normal">
-                    — {kpi.description}
+                  <span className="text-[9px] text-muted-foreground/50 font-medium truncate">
+                    {kpi.description}
                   </span>
                 </div>
               </CardContent>
               {/* Premium bottom border accent */}
-              <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className={cn(
+                "absolute inset-x-0 bottom-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-transparent to-transparent",
+                isGold 
+                  ? "via-amber-500/35" 
+                  : (kpi.positive ? "via-primary/35" : "via-red-500/35")
+              )} />
             </Card>
           </m.div>
         );

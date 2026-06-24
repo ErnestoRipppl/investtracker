@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import { m, AnimatePresence } from "motion/react";
 import { useAppReducedMotion } from "@/lib/motion";
 import {
-  TrendingUp,
   LayoutDashboard,
   ArrowLeftRight,
   Upload,
@@ -49,21 +48,35 @@ export function Sidebar() {
       {/* Branding */}
       <div className="flex items-center h-14 px-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <TrendingUp className="h-4 w-4" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-500/25 overflow-hidden bg-black/40 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+            <img
+              src="/whale_gold_badge.png"
+              alt="Whale Logo"
+              className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+            />
           </div>
           <AnimatePresence mode="wait">
             {!collapsed && (
-              <m.span
+              <m.div
                 key="brand-text"
                 initial={reducedMotion ? false : { opacity: 0, x: -8 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -8 }}
                 transition={{ duration: 0.15 }}
-                className="font-semibold text-sm text-sidebar-foreground whitespace-nowrap"
+                className="flex flex-col select-none"
               >
-                InvestTracker
-              </m.span>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-sm tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+                    Whale Tracker
+                  </span>
+                  <span className="text-[8px] font-black tracking-widest px-1 py-0.25 rounded bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 border border-amber-500/30 uppercase scale-90 origin-left">
+                    Elite
+                  </span>
+                </div>
+                <span className="text-[8px] text-muted-foreground/50 tracking-wider -mt-0.5 uppercase font-medium">
+                  Family Office Suite
+                </span>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
@@ -84,17 +97,16 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
-                "transition-colors duration-150",
-                "min-h-[44px]",
+                "transition-all duration-150 relative overflow-hidden group min-h-[44px]",
                 isActive
-                  ? "bg-sidebar-primary/15 text-sidebar-primary"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  ? "bg-gradient-to-r from-primary/12 to-amber-500/2 text-primary border-l-2 border-primary shadow-[inset_1px_0_0_0_rgba(16,185,129,0.1)]"
+                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground"
               )}
             >
               <Icon
                 className={cn(
-                  "h-5 w-5 shrink-0",
-                  isActive ? "text-sidebar-primary" : ""
+                  "h-5 w-5 shrink-0 transition-transform duration-300 group-hover:scale-110",
+                  isActive ? "text-sidebar-primary" : "group-hover:text-amber-400"
                 )}
               />
               <AnimatePresence mode="wait">
@@ -111,6 +123,10 @@ export function Sidebar() {
                   </m.span>
                 )}
               </AnimatePresence>
+              {/* Subtle gold line hover indicator for inactive items */}
+              {!isActive && (
+                <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-amber-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              )}
             </Link>
           );
         })}

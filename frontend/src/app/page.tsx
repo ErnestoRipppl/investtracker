@@ -42,6 +42,65 @@ export default function DashboardPage() {
 
   return (
     <m.div {...containerProps} className="space-y-6">
+      {/* Welcome Hero Banner */}
+      <m.div {...itemProps} className="relative overflow-hidden rounded-2xl border border-sidebar-border bg-gradient-to-br from-background via-card/30 to-background shadow-2xl glass-whale-card">
+        {/* Glow behind */}
+        <div className="absolute inset-0 bg-grid-glow opacity-50 pointer-events-none" />
+        
+        <div className="flex flex-col lg:flex-row items-stretch min-h-[220px]">
+          {/* Text and stats side */}
+          <div className="flex-1 p-6 md:p-8 flex flex-col justify-between relative z-10">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/10 border border-amber-500/25 text-[9px] font-black text-amber-400 tracking-widest uppercase">
+                Socio General &bull; Acceso Whale
+              </div>
+              <h2 className="text-xl md:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-100 to-amber-200 bg-clip-text text-transparent leading-tight">
+                Portal de Gestión Patrimonial
+              </h2>
+              <p className="text-xs md:text-sm text-muted-foreground/80 max-w-xl font-medium leading-relaxed">
+                Bienvenido al centro de mando familiar de grado institucional. Aquí supervisas tus portafolios globales, análisis de riesgo y rebalanceos automatizados en tiempo real.
+              </p>
+            </div>
+            
+            {/* Metadata Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/5">
+              <div className="space-y-0.5">
+                <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold block">Nivel de Acceso</span>
+                <span className="text-xs font-bold text-foreground">VIP / Elite (Grado 5)</span>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold block">Custodios Activos</span>
+                <span className="text-xs font-bold text-foreground">Multibanco Enlazado</span>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold block">Límite Operativo</span>
+                <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                  Ilimitado
+                </span>
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[9px] text-muted-foreground/50 uppercase tracking-widest font-bold block">Estado de Red</span>
+                <span className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Operativo &bull; SSL
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Cyber Whale Image Side */}
+          <div className="w-full lg:w-[320px] relative min-h-[180px] lg:min-h-full overflow-hidden border-t lg:border-t-0 lg:border-l border-sidebar-border bg-slate-950/45 shrink-0">
+            <img
+              src="/whale_luxury_banner.png"
+              alt="Cybernetic Wealth Whale"
+              className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 hover:scale-105"
+            />
+            {/* Glass gradient overlay to blend into the card text */}
+            <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-background via-transparent to-transparent pointer-events-none" />
+          </div>
+        </div>
+      </m.div>
+
       {/* KPI Cards Grid */}
       <m.div {...itemProps}>
         <KPICards />
