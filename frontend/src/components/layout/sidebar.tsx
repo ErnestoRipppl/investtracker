@@ -48,7 +48,7 @@ export function Sidebar() {
       {/* Branding */}
       <div className="flex items-center h-14 px-4 border-b border-sidebar-border">
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-500/25 overflow-hidden bg-black/40 shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/10 overflow-hidden bg-primary/5 shadow-sm">
             <img
               src="/whale_gold_badge.png"
               alt="Whale Logo"
@@ -65,15 +65,15 @@ export function Sidebar() {
                 transition={{ duration: 0.15 }}
                 className="flex flex-col select-none"
               >
-                <div className="flex items-center gap-1">
-                  <span className="font-bold text-sm tracking-tight bg-gradient-to-r from-amber-200 via-amber-400 to-amber-200 bg-clip-text text-transparent">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-extrabold text-sm tracking-tight text-primary">
                     Whale Tracker
                   </span>
-                  <span className="text-[8px] font-black tracking-widest px-1 py-0.25 rounded bg-gradient-to-r from-amber-500/20 to-yellow-500/20 text-amber-400 border border-amber-500/30 uppercase scale-90 origin-left">
+                  <span className="text-[8px] font-black tracking-widest px-1 py-0.25 rounded bg-accent text-primary border border-primary/20 uppercase scale-90 origin-left">
                     Elite
                   </span>
                 </div>
-                <span className="text-[8px] text-muted-foreground/50 tracking-wider -mt-0.5 uppercase font-medium">
+                <span className="text-[8px] text-muted-foreground/75 tracking-wider -mt-0.5 uppercase font-bold">
                   Family Office Suite
                 </span>
               </m.div>
@@ -96,17 +96,17 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium",
                 "transition-all duration-150 relative overflow-hidden group min-h-[44px]",
                 isActive
-                  ? "bg-gradient-to-r from-primary/12 to-amber-500/2 text-primary border-l-2 border-primary shadow-[inset_1px_0_0_0_rgba(16,185,129,0.1)]"
-                  : "text-sidebar-foreground/70 hover:bg-sidebar-accent/80 hover:text-sidebar-foreground"
+                  ? "bg-accent/70 text-primary font-bold shadow-[0_2px_8px_rgba(15,46,33,0.03)]"
+                  : "text-muted-foreground hover:bg-accent/40 hover:text-primary"
               )}
             >
               <Icon
                 className={cn(
                   "h-5 w-5 shrink-0 transition-transform duration-300 group-hover:scale-110",
-                  isActive ? "text-sidebar-primary" : "group-hover:text-amber-400"
+                  isActive ? "text-primary" : "text-muted-foreground/70 group-hover:text-primary"
                 )}
               />
               <AnimatePresence mode="wait">
@@ -123,9 +123,9 @@ export function Sidebar() {
                   </m.span>
                 )}
               </AnimatePresence>
-              {/* Subtle gold line hover indicator for inactive items */}
-              {!isActive && (
-                <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-amber-400 to-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+              {/* Subtle active line indicator */}
+              {isActive && (
+                <div className="absolute left-0 top-1/4 bottom-1/4 w-[3px] rounded-r bg-primary" />
               )}
             </Link>
           );

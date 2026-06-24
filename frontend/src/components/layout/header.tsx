@@ -29,20 +29,20 @@ export function Header() {
   const title = routeTitles[pathname] ?? "InvestTracker";
 
   return (
-    <header className="h-14 border-b border-sidebar-border flex items-center justify-between px-4 lg:px-6 bg-background/50 backdrop-blur-xl shrink-0">
-      <h1 className="text-sm font-bold tracking-tight text-foreground truncate uppercase text-muted-foreground/90">
+    <header className="h-14 border-b border-sidebar-border flex items-center justify-between px-4 lg:px-6 bg-card/75 backdrop-blur-xl shrink-0">
+      <h1 className="text-xs font-black tracking-widest text-primary/80 truncate uppercase">
         {title}
       </h1>
       <div className="flex items-center gap-3">
         {/* VIP Whale Indicator */}
-        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/8 border border-amber-500/20 text-amber-400 shadow-[0_0_10px_rgba(245,158,11,0.05)]">
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-800 shadow-sm">
           <span className="status-dot-gold" />
-          <span className="tracking-wider uppercase text-[9px] font-black">Family Office Portal</span>
+          <span className="tracking-wider uppercase text-[9px] font-bold">Family Office Portal</span>
         </div>
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/8 border border-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.05)]">
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 shadow-sm">
           <span className="status-dot-active" />
-          <span className="tracking-wider uppercase text-[9px] font-black hidden md:inline">Whale Mode Activo</span>
-          <span className="tracking-wider uppercase text-[9px] font-black md:hidden">Whale Activo</span>
+          <span className="tracking-wider uppercase text-[9px] font-bold hidden md:inline">Whale Mode Activo</span>
+          <span className="tracking-wider uppercase text-[9px] font-bold md:hidden">Whale Activo</span>
         </div>
 
         {mounted && (
