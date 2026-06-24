@@ -133,102 +133,48 @@ export function KPICards() {
     >
       {kpis.map((kpi, index) => {
         const Icon = kpi.icon;
-        const isMain = kpi.title === "Patrimonio Neto";
-        const isGold = kpi.title === "Total Invertido";
-
-        if (isMain) {
-          return (
-            <m.div key={index} {...itemProps}>
-              <Card className="relative overflow-hidden bg-primary text-primary-foreground border-none shadow-md hover:-translate-y-0.5 transition-all duration-300 group rounded-3xl min-h-[140px]">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-primary-foreground/75">
-                    {kpi.title}
-                  </CardTitle>
-                  <div className="h-8 w-8 rounded-lg flex items-center justify-center bg-white/10 text-white border border-white/10 group-hover:bg-white/20 transition-all duration-300">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-black tracking-tight text-white">
-                    <AnimatedNumber value={kpi.value} formatter={kpi.formatter} />
-                  </div>
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <p className={cn(
-                      "text-[10px] font-bold tracking-wide flex items-center gap-0.5 px-1.5 py-0.5 rounded",
-                      kpi.positive
-                        ? "text-emerald-300 bg-white/5 border border-white/10"
-                        : "text-red-300 bg-white/5 border border-white/10"
-                    )}>
-                      {kpi.positive ? (
-                        <TrendingUp className="h-2.5 w-2.5" />
-                      ) : (
-                        <TrendingDown className="h-2.5 w-2.5" />
-                      )}
-                      {kpi.change}
-                    </p>
-                    <span className="text-[9px] text-primary-foreground/60 font-medium truncate">
-                      {kpi.description}
-                    </span>
-                  </div>
-                </CardContent>
-                <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-amber-400/40 to-transparent" />
-              </Card>
-            </m.div>
-          );
-        }
-
-        // Other light-themed cards
-        const themeColor = isGold 
-          ? "text-amber-600 bg-amber-50 group-hover:bg-amber-100 group-hover:border-amber-200" 
-          : (kpi.positive 
-              ? "text-emerald-600 bg-emerald-50 group-hover:bg-emerald-100 group-hover:border-emerald-200" 
-              : "text-red-600 bg-red-50 group-hover:bg-red-100 group-hover:border-red-200");
-
         return (
           <m.div key={index} {...itemProps}>
-            <Card className="relative overflow-hidden bg-card text-card-foreground border border-sidebar-border/80 shadow-sm hover:shadow-md hover:border-primary/20 hover:-translate-y-0.5 transition-all duration-300 group rounded-3xl min-h-[140px]">
+            <Card className="relative overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm hover:border-primary/30 transition-colors duration-300 group">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/75">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {kpi.title}
                 </CardTitle>
-                <div className={cn(
-                  "h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-300 border border-transparent",
-                  themeColor
-                )}>
-                  <Icon className="h-4 w-4" />
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors duration-300">
+                  <Icon className="h-4 w-4 text-primary" />
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-black tracking-tight text-foreground">
+                <div className="text-2xl font-bold tracking-tight">
                   <AnimatedNumber value={kpi.value} formatter={kpi.formatter} />
                 </div>
-                <div className="flex items-center gap-1.5 mt-1.5">
+                <div className="flex items-center gap-1 mt-1">
                   {kpi.title !== "Total Invertido" ? (
                     <p
                       className={cn(
-                        "text-[10px] font-bold tracking-wide flex items-center gap-0.5 px-1.5 py-0.5 rounded",
-                        kpi.positive 
-                          ? "text-emerald-700 bg-emerald-50 border border-emerald-200" 
-                          : "text-red-700 bg-red-50 border border-red-200"
+                        "text-xs font-semibold flex items-center gap-0.5",
+                        kpi.positive ? "text-emerald-500" : "text-red-500"
                       )}
                     >
                       {kpi.positive ? (
-                        <TrendingUp className="h-2.5 w-2.5" />
+                        <TrendingUp className="h-3 w-3" />
                       ) : (
-                        <TrendingDown className="h-2.5 w-2.5" />
+                        <TrendingDown className="h-3 w-3" />
                       )}
                       {kpi.change}
                     </p>
                   ) : (
-                    <p className="text-[10px] font-bold tracking-wide px-1.5 py-0.5 rounded text-amber-800 bg-amber-50 border border-amber-200">
+                    <p className="text-xs text-muted-foreground font-medium">
                       {kpi.change}
                     </p>
                   )}
-                  <span className="text-[9px] text-muted-foreground/60 font-medium truncate">
-                    {kpi.description}
+                  <span className="text-[10px] text-muted-foreground/60 font-normal">
+                    — {kpi.description}
                   </span>
                 </div>
               </CardContent>
+              {/* Premium bottom border accent */}
+              <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             </Card>
           </m.div>
         );
