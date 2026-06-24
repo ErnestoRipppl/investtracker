@@ -54,6 +54,7 @@ export function HoldingsTable() {
     if (t === "etf") return "ETF";
     if (t === "bond" || t === "bono") return "Bono";
     if (t === "fund" || t === "fondo") return "Fondo";
+    if (t === "liquidez" || t === "cash" || t === "liquidity") return "Liquidez";
     return type;
   };
 

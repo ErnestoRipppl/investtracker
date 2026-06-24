@@ -48,9 +48,12 @@ class Asset(Base):
     @classmethod
     def determine_type(cls, ticker: str) -> str:
         """
-        Determine the asset type ('crypto', 'etf', 'stock') based on the ticker.
+        Determine the asset type ('crypto', 'etf', 'stock', 'liquidez') based on the ticker.
         """
         t = ticker.strip().upper()
+        if "LIQ" in t or "CASH" in t or t == "REV-LIQ":
+            return "liquidez"
+            
         # Clean suffixes (e.g. BTC-EUR -> BTC, ETH.DE -> ETH)
         base = t.split("-")[0].split(".")[0]
         
