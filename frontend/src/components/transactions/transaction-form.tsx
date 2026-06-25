@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,6 +55,7 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
   const createMutation = useCreateTransaction();
   const updateMutation = useUpdateTransaction();
   const isEditing = !!transactionToEdit;
+  const [isCash, setIsCash] = React.useState(false);
 
   const defaultValues: Partial<TransactionFormValues> = React.useMemo(() => {
     if (transactionToEdit) {
@@ -83,6 +85,7 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
     handleSubmit,
     control,
     reset,
+    setValue,
     formState: { errors },
   } = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionSchema),
@@ -91,39 +94,45 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
 
   React.useEffect(() => {
     if (open) {
+      const isTxCash = transactionToEdit?.ticker === "REV-LIQ";
+      setIsCash(isTxCash);
       reset(defaultValues);
     }
-  }, [open, reset, defaultValues]);
+  }, [open, reset, defaultValues, transactionToEdit]);
 
   const onSubmit = async (values: TransactionFormValues) => {
     try {
+      const finalTicker = isCash ? "REV-LIQ" : values.ticker;
+      const finalPrice = isCash ? 1.00 : values.price;
+      const finalFees = isCash ? 0.00 : values.fees;
+
       if (isEditing && transactionToEdit) {
         await updateMutation.mutateAsync({
           id: transactionToEdit.id,
           data: {
             date: values.date,
-            ticker: values.ticker,
+            ticker: finalTicker,
             type: values.type,
             quantity: values.quantity,
-            price: values.price,
-            fees: values.fees,
+            price: finalPrice,
+            fees: finalFees,
             notes: values.notes || "",
           },
         });
-        toast.success("Transacción actualizada con éxito");
+        toast.success(isCash ? "Transacción de efectivo actualizada con éxito" : "Transacción actualizada con éxito");
       } else {
         await createMutation.mutateAsync({
           date: values.date,
-          ticker: values.ticker,
+          ticker: finalTicker,
           type: values.type,
           quantity: values.quantity,
-          price: values.price,
-          fees: values.fees,
+          price: finalPrice,
+          fees: finalFees,
           notes: values.notes || "",
           currency: "EUR",
           broker: "Default",
         });
-        toast.success("Transacción creada con éxito");
+        toast.success(isCash ? "Transacción de efectivo creada con éxito" : "Transacción creada con éxito");
       }
       onOpenChange(false);
       reset();
@@ -147,6 +156,37 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 py-2">
+          {/* Toggle Efectivo */}
+          <div className="flex items-center justify-between rounded-lg border border-border/50 bg-muted/30 p-3.5">
+            <div className="space-y-0.5">
+              <Label htmlFor="cash-mode" className="text-sm font-semibold">Transacción de Efectivo</Label>
+              <p className="text-xs text-muted-foreground">
+                Cuenta remunerada / Cuenta flexible de Revolut (REV-LIQ)
+              </p>
+            </div>
+            <Switch
+              id="cash-mode"
+              checked={isCash}
+              onCheckedChange={(checked) => {
+                setIsCash(checked);
+                if (checked) {
+                  setValue("ticker", "REV-LIQ", { shouldValidate: true });
+                  setValue("price", 1, { shouldValidate: true });
+                  setValue("fees", 0, { shouldValidate: true });
+                } else {
+                  if (transactionToEdit?.ticker === "REV-LIQ") {
+                    setValue("ticker", "");
+                    setValue("price", undefined as unknown as number);
+                  } else {
+                    setValue("ticker", transactionToEdit?.ticker || "", { shouldValidate: true });
+                    setValue("price", transactionToEdit?.price || undefined as unknown as number, { shouldValidate: true });
+                  }
+                }
+              }}
+              disabled={isLoading}
+            />
+          </div>
+
           {/* Ticker y Tipo */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -154,7 +194,7 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
               <Input
                 id="ticker"
                 placeholder="ej. AAPL, TSLA"
-                disabled={isLoading}
+                disabled={isLoading || isCash}
                 className={errors.ticker ? "border-destructive focus-visible:ring-destructive" : ""}
                 {...register("ticker")}
               />
@@ -171,16 +211,26 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
                 render={({ field }) => (
                   <Select
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value}
                     disabled={isLoading}
                   >
                     <SelectTrigger className={errors.type ? "border-destructive" : ""}>
                       <SelectValue placeholder="Selecciona" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="BUY">Compra (BUY)</SelectItem>
-                      <SelectItem value="SELL">Venta (SELL)</SelectItem>
-                      <SelectItem value="DIVIDEND">Dividendo (DIVIDEND)</SelectItem>
+                      {isCash ? (
+                        <>
+                          <SelectItem value="BUY">Depositar / Ingresar (BUY)</SelectItem>
+                          <SelectItem value="SELL">Retirar / Traspaso (SELL)</SelectItem>
+                          <SelectItem value="DIVIDEND">Intereses Recibidos (DIVIDEND)</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="BUY">Compra (BUY)</SelectItem>
+                          <SelectItem value="SELL">Venta (SELL)</SelectItem>
+                          <SelectItem value="DIVIDEND">Dividendo (DIVIDEND)</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 )}
@@ -209,7 +259,7 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
           {/* Cantidad y Precio */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="quantity">Cantidad</Label>
+              <Label htmlFor="quantity">{isCash ? "Importe (€)" : "Cantidad"}</Label>
               <Input
                 id="quantity"
                 type="number"
@@ -231,7 +281,7 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
                 type="number"
                 step="any"
                 placeholder="0.00"
-                disabled={isLoading}
+                disabled={isLoading || isCash}
                 className={errors.price ? "border-destructive focus-visible:ring-destructive" : ""}
                 {...register("price")}
               />
@@ -249,7 +299,7 @@ export function TransactionForm({ open, onOpenChange, transactionToEdit }: Trans
               type="number"
               step="any"
               placeholder="0.00"
-              disabled={isLoading}
+              disabled={isLoading || isCash}
               className={errors.fees ? "border-destructive focus-visible:ring-destructive" : ""}
               {...register("fees")}
             />
